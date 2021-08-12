@@ -2,79 +2,150 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include "GetWeather.h"
 
-#include "OptimaLTStd22pt7b.h"
-#include "OptimaLTStd7pt7b.h"
-#include "OptimaLTStd_Black32pt7b.h"
+#include "Foofingers/fonts/MotorolaScreenType_w_degree8pt7b.h"
+#include "Foofingers/fonts/Bebas_Regular60pt7b.h"
+#include "Foofingers/fonts/Bebas_Regular30pt7b.h"
+#include "Foofingers/FooFingers_sprites.h"
 #include "GetLocation.h"
 
 using namespace Watchy;
 
-// inspired by http://rosettacode.org/wiki/Number_names#C.2B.2B
-const char *smallNumbers[] = {"",        "one",       "two",      "three",
-                              "four",    "five",      "six",      "seven",
-                              "eight",   "nine",      "ten",      "eleven",
-                              "twelve",  "thirteen",  "fourteen", "fifteen",
-                              "sixteen", "seventeen", "eighteen", "nineteen"};
-const char *decades[] = {"oh", nullptr, "twenty", "thirty", "forty", "fifty"};
-
-void rightJustify(const char *txt, uint16_t &yPos) {
-  int16_t x1, y1;
-  uint16_t w, h;
-  const uint8_t PADDING = 0; // how much padding to leave around text
-  display.getTextBounds(txt, 0, 0, &x1, &y1, &w, &h);
-  // right justify with padding
-  display.setCursor(200-x1-w-PADDING, yPos);
-  display.print(txt);  
-}
-
 void TimeScreen::show() {
-  setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
-  tzset();
+  //setenv("TZ", Watchy_GetLocation::currentLocation.timezone, 1);
+  //tzset();
   tm t;
   time_t tt = now();
   localtime_r(&tt, &t);
 
   Watchy::display.fillScreen(bgColor);
 
+  String s_currentHour = "";
+  String s_currentMin = "";
+
   // hours
-  const GFXfont * font = OptimaLTStd_Black32pt7b;
-  display.setFont(font);
-  uint16_t yPos = font->yAdvance; // assume cursor(0,0)
-  rightJustify(smallNumbers[(t.tm_hour + 11) % 12 + 1], yPos);
+  if(t.tm_hour < 10){
+      s_currentHour.concat("0");
+  }
+  s_currentHour.concat(t.tm_hour);
+
+  display.setFont(&Bebas_Regular60pt7b);
+  display.setCursor(20, 145);
+  display.print(s_currentHour);
 
   // minutes
-  font = OptimaLTStd22pt7b;
-  display.setFont(font);
-  yPos += font->yAdvance;
-  const char *txt;
-  assert(t.tm_min >= 0 && t.tm_min < 60);
-  if (t.tm_min == 0) {
-    // 0: exactly on the hour
-    if (t.tm_hour == 0) {
-      txt = "midnight";
-    } else if (t.tm_hour == 12) {
-      txt = "noon";
-    } else {
-      txt = "o'clock";
-    }
-  } else if (10 <= t.tm_min && t.tm_min < 20) {
-    // 10-19
-    txt = smallNumbers[t.tm_min];
-  } else if (t.tm_min <= 59) {
-    // 1-9, 20-59
-    rightJustify(decades[t.tm_min / 10], yPos);
-    yPos += font->yAdvance;
-    txt = smallNumbers[t.tm_min % 10];
+  if(t.tm_min < 10){
+      s_currentMin.concat("0");
   }
-  // ignore warning about txt not initialized, assert guarantees it will be
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-  rightJustify(txt, yPos);
-  #pragma GCC diagnostic pop
+  s_currentMin.concat(t.tm_min);
+
+  display.setFont(&Bebas_Regular30pt7b);
+  display.setCursor(130, 102);
+  display.print(s_currentMin);
 
   // date
-  display.setCursor(0, 195);
-  display.setFont(OptimaLTStd7pt7b);
-  display.print(&t, "%a, %B %d %Y %Z");
+  String s_currentDateDay = "";
+    switch (t.tm_mday){
+      case 1:
+      case 21:
+      case 31:
+        s_currentDateDay.concat("st");
+      break;
+      case 2:
+      case 22:
+        s_currentDateDay.concat("nd");
+      break;
+      case 3:
+      case 23:
+        s_currentDateDay.concat("rd");
+      break;
+      default:
+        s_currentDateDay.concat("th");
+      break;
+    }
+  
+  display.setCursor(5, 22);
+  display.setFont(&MotorolaScreenType_w_degree8pt7b);
+  display.print(&t, "%a, %B %d");
+  display.print(s_currentDateDay);
+
+  // Show battery top right
+  int8_t batteryLevel = 0;
+    float VBAT = getBatteryVoltage();
+    if(VBAT > 4.1){
+        batteryLevel = 4;
+        display.drawBitmap(167, 8, foofingers_img_bat100, 28, 13, GxEPD_WHITE);
+    }
+    else if(VBAT > 3.95 && VBAT <= 4.1){
+        batteryLevel = 3;
+        display.drawBitmap(167, 8, foofingers_img_bat75, 28, 13, GxEPD_WHITE);
+    }
+    else if(VBAT > 3.88 && VBAT <= 3.95){
+        batteryLevel = 2;
+        display.drawBitmap(167, 8, foofingers_img_bat50, 28, 13, GxEPD_WHITE);
+    } 
+    else if(VBAT > 3.80 && VBAT <= 3.95){
+        batteryLevel = 1;
+        display.drawBitmap(167, 8, foofingers_img_bat25, 28, 13, GxEPD_WHITE);
+    }    
+    else if(VBAT <= 3.80){
+        batteryLevel = 0;
+        display.drawBitmap(167, 8, foofingers_img_bat0, 28, 13, GxEPD_WHITE);
+    }
+
+    // Show steps
+    uint32_t stepCount = sensor.getCounter();
+
+    const unsigned char* stepIcon;
+
+    if(stepCount > 0 && stepCount <= 3999){
+        stepIcon = foofingers_img_step_goal_1;
+    }
+    else if(stepCount > 4000 && stepCount <= 8000){
+        stepIcon = foofingers_img_step_goal_2;
+    }
+    else if(stepCount > 8001){
+        stepIcon = foofingers_img_step_goal_3;
+    }
+    
+    display.drawBitmap(10, 168, stepIcon, 38, 23, GxEPD_WHITE);
+    display.setFont(&MotorolaScreenType_w_degree8pt7b);
+    display.setCursor(55, 190);
+    display.println(stepCount);
+
+    // Show Weather
+    const unsigned char* weatherIcon;
+    auto wd = Watchy_GetWeather::getWeather();
+    uint32_t weatherCode = wd.weatherConditionCode;
+
+    if(weatherCode > 801){//Cloudy
+    weatherIcon = foofingers_img_cloudy;
+    }else if(weatherCode == 801){//Few Clouds
+    weatherIcon = foofingers_img_cloudsun;  
+    }else if(weatherCode == 800){//Clear
+    weatherIcon = foofingers_img_sunny;  
+    }else if(weatherCode >=700){//Atmosphere
+    weatherIcon = foofingers_img_cloudy; 
+    }else if(weatherCode >=600){//Snow
+    weatherIcon = foofingers_img_snow;
+    }else if(weatherCode >=500){//Rain
+    weatherIcon = foofingers_img_rain;  
+    }else if(weatherCode >=300){//Drizzle
+    weatherIcon = foofingers_img_drizzle;
+    }else if(weatherCode >=200){//Thunderstorm
+    weatherIcon = foofingers_img_thunderstorm; 
+    }else
+    return;
+    display.drawBitmap(128, 110, weatherIcon, 48, 48, GxEPD_WHITE);
+
+    // Show temp
+    String tempText = "";
+    tempText.concat(wd.temperature);
+    tempText.concat("°C");
+    
+    display.setFont(&MotorolaScreenType_w_degree8pt7b);
+    display.setCursor(170, 190);
+    display.println(tempText);
+
 }

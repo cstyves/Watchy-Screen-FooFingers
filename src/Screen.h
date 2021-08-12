@@ -9,7 +9,7 @@ class Screen {
  public:
   Screen* parent;
   uint16_t bgColor;
-  Screen(uint16_t bg = GxEPD_WHITE) : parent(nullptr), bgColor(bg){};
+  Screen(uint16_t bg = GxEPD_BLACK) : parent(nullptr), bgColor(bg){};
   virtual void show() = 0;  // display this screen
   virtual void up() {}
   virtual void down() {}
