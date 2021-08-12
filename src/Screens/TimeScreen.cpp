@@ -1,8 +1,8 @@
 #include "TimeScreen.h"
+#include "GetWeather.h"
 
 #include <stdlib.h>
 #include <time.h>
-#include "GetWeather.h"
 
 #include "Foofingers/fonts/MotorolaScreenType_w_degree8pt7b.h"
 #include "Foofingers/fonts/Bebas_Regular60pt7b.h"
@@ -18,7 +18,6 @@ void TimeScreen::show() {
   tm t;
   time_t tt = now();
   localtime_r(&tt, &t);
-
   Watchy::display.fillScreen(bgColor);
 
   String s_currentHour = "";
@@ -30,9 +29,9 @@ void TimeScreen::show() {
   }
   s_currentHour.concat(t.tm_hour);
 
-  display.setFont(&Bebas_Regular60pt7b);
-  display.setCursor(20, 145);
-  display.print(s_currentHour);
+  Watchy::display.setFont(&Bebas_Regular60pt7b);
+  Watchy::display.setCursor(20, 145);
+  Watchy::display.print(s_currentHour);
 
   // minutes
   if(t.tm_min < 10){
@@ -40,9 +39,9 @@ void TimeScreen::show() {
   }
   s_currentMin.concat(t.tm_min);
 
-  display.setFont(&Bebas_Regular30pt7b);
-  display.setCursor(130, 102);
-  display.print(s_currentMin);
+  Watchy::display.setFont(&Bebas_Regular30pt7b);
+  Watchy::display.setCursor(130, 102);
+  Watchy::display.print(s_currentMin);
 
   // date
   String s_currentDateDay = "";
@@ -65,33 +64,33 @@ void TimeScreen::show() {
       break;
     }
   
-  display.setCursor(5, 22);
-  display.setFont(&MotorolaScreenType_w_degree8pt7b);
-  display.print(&t, "%a, %B %d");
-  display.print(s_currentDateDay);
+  Watchy::display.setCursor(5, 22);
+  Watchy::display.setFont(&MotorolaScreenType_w_degree8pt7b);
+  Watchy::display.print(&t, "%a, %B %d");
+  Watchy::display.print(s_currentDateDay);
 
   // Show battery top right
   int8_t batteryLevel = 0;
     float VBAT = getBatteryVoltage();
     if(VBAT > 4.1){
         batteryLevel = 4;
-        display.drawBitmap(167, 8, foofingers_img_bat100, 28, 13, GxEPD_WHITE);
+        Watchy::display.drawBitmap(167, 8, foofingers_img_bat100, 28, 13, GxEPD_WHITE);
     }
     else if(VBAT > 3.95 && VBAT <= 4.1){
         batteryLevel = 3;
-        display.drawBitmap(167, 8, foofingers_img_bat75, 28, 13, GxEPD_WHITE);
+        Watchy::display.drawBitmap(167, 8, foofingers_img_bat75, 28, 13, GxEPD_WHITE);
     }
     else if(VBAT > 3.88 && VBAT <= 3.95){
         batteryLevel = 2;
-        display.drawBitmap(167, 8, foofingers_img_bat50, 28, 13, GxEPD_WHITE);
+        Watchy::display.drawBitmap(167, 8, foofingers_img_bat50, 28, 13, GxEPD_WHITE);
     } 
     else if(VBAT > 3.80 && VBAT <= 3.95){
         batteryLevel = 1;
-        display.drawBitmap(167, 8, foofingers_img_bat25, 28, 13, GxEPD_WHITE);
+        Watchy::display.drawBitmap(167, 8, foofingers_img_bat25, 28, 13, GxEPD_WHITE);
     }    
     else if(VBAT <= 3.80){
         batteryLevel = 0;
-        display.drawBitmap(167, 8, foofingers_img_bat0, 28, 13, GxEPD_WHITE);
+        Watchy::display.drawBitmap(167, 8, foofingers_img_bat0, 28, 13, GxEPD_WHITE);
     }
 
     // Show steps
@@ -109,10 +108,10 @@ void TimeScreen::show() {
         stepIcon = foofingers_img_step_goal_3;
     }
     
-    display.drawBitmap(10, 168, stepIcon, 38, 23, GxEPD_WHITE);
-    display.setFont(&MotorolaScreenType_w_degree8pt7b);
-    display.setCursor(55, 190);
-    display.println(stepCount);
+    Watchy::display.drawBitmap(5, 168, stepIcon, 38, 23, GxEPD_WHITE);
+    Watchy::display.setFont(&MotorolaScreenType_w_degree8pt7b);
+    Watchy::display.setCursor(55, 190);
+    Watchy::display.println(stepCount);
 
     // Show Weather
     const unsigned char* weatherIcon;
@@ -137,15 +136,14 @@ void TimeScreen::show() {
     weatherIcon = foofingers_img_thunderstorm; 
     }else
     return;
-    display.drawBitmap(128, 110, weatherIcon, 48, 48, GxEPD_WHITE);
+    Watchy::display.drawBitmap(128, 110, weatherIcon, 48, 48, GxEPD_WHITE);
 
     // Show temp
     String tempText = "";
     tempText.concat(wd.temperature);
     tempText.concat("°C");
     
-    display.setFont(&MotorolaScreenType_w_degree8pt7b);
-    display.setCursor(170, 190);
-    display.println(tempText);
-
+    Watchy::display.setFont(&MotorolaScreenType_w_degree8pt7b);
+    Watchy::display.setCursor(175, 190);
+    Watchy::display.println(tempText);
 }
